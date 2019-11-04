@@ -1,0 +1,14 @@
+<Project>
+
+ <!-- Common properties shared by all projects -->
+ <PropertyGroup>
+    <!-- The following 3 lines enable C# 8 non-nullable reference types -->
+    <Nullable>enable</Nullable>
+    <RunAnalyzersDuringBuild>true</RunAnalyzersDuringBuild>
+    <RunAnalyzersDuringLiveAnalysis>true</RunAnalyzersDuringLiveAnalysis>
+
+    <!-- Common ruleset shared by all projects -->
+    <CodeAnalysisRuleset>$(MSBuildThisFileDirectory)NonNullableReferenceTypes.ruleset</CodeAnalysisRuleset>
+ </PropertyGroup>
+
+</Project>
