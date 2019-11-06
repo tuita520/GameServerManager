@@ -5,8 +5,97 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:GameServerManager"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="Game Server Manager" Height="450" Width="800"
+        DataContext="{Binding RelativeSource={RelativeSource Self}}">
     <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
 
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <Button x:Name="StartStopServerButton"
+                Grid.Column="0"
+                Grid.Row="0"
+                Click="StartStopServerButton_Click">
+            <Button.Style>
+                <Style TargetType="{x:Type Button}">
+                    <Setter Property="Content"
+                            Value="Start" />
+
+                    <Setter Property="Margin"
+                            Value="5" />
+
+                    <Setter Property="Width"
+                            Value="100" />
+
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsServerRunning}"
+                                     Value="True">
+                            <Setter Property="Content"
+                                    Value="Stop" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Button.Style>
+        </Button>
+
+        <Button x:Name="TelnetConnectionButton"
+                Grid.Column="1"
+                Grid.Row="0"
+                Click="TelnetConnectionButton_Click">
+            <Button.Style>
+                <Style TargetType="{x:Type Button}">
+                    <Setter Property="Content"
+                            Value="Connect" />
+
+                    <Setter Property="Margin"
+                            Value="5" />
+
+                    <Setter Property="Width"
+                            Value="100" />
+
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsTelnetConnected}"
+                                     Value="True">
+                            <Setter Property="Content"
+                                    Value="Disconnect" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Button.Style>
+        </Button>
+
+        <Button x:Name="ToggleBackupsButton"
+                Grid.Column="2"
+                Grid.Row="0"
+                Click="ToggleBackupsButton_Click">
+            <Button.Style>
+                <Style TargetType="{x:Type Button}">
+                    <Setter Property="Content"
+                            Value="Start Backups" />
+
+                    <Setter Property="Margin"
+                            Value="5" />
+
+                    <Setter Property="Width"
+                            Value="100" />
+
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsAutoBackingUp}"
+                                     Value="True">
+                            <Setter Property="Content"
+                                    Value="Stop Backups" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Button.Style>
+        </Button>
     </Grid>
 </Window>

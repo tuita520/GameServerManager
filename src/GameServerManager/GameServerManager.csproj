@@ -7,4 +7,9 @@
     <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="LiteGuard" Version="2.2.0" />
+    <PackageReference Include="Telnet" Version="0.8.4" />
+  </ItemGroup>
+
 </Project>
