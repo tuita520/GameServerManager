@@ -25,14 +25,15 @@ namespace GameServerManager
 
         private const string TELNET_ADDRESS = @"127.0.0.1";
         private const int TELNET_PORT = 30004;
-        private const string TELNET_USERNAME = @"";
-        private const string TELNET_PASSWORD = @"XXXXX";
+        private const string TELNET_PASSWORD = @"XXX";
+        private const string TELNET_SAVE_AND_EXIT_SERVER = @"saveandexit 0";
 
         private const string GAME_SAVE_DATA_DIRECTORY = @"E:\GameServers\Empyrion\SaveData\Games\BlargHonk\";
         private const string GAME_BACKUP_TEMP_DIRECTORY = @"E:\GameServers\Empyrion\SaveDataBackups\temp\";
         private const string GAME_BACKUP_DIRECTORY = @"E:\GameServers\Empyrion\SaveDataBackups\";
 
         private const int BACKUP_FREQUENCY_MS = 600000;
+        private const int TELNET_POLLING_FREQUENCY_MS = 1000;
 
         private const string ZIP_PREFIX = "SaveData.Games.BlargHonk";
 
@@ -45,6 +46,7 @@ namespace GameServerManager
         private bool _isAutoBackingUp;
 
         private Client? _telnetClient;
+        private readonly Timer _telnetTimer = new Timer(TELNET_POLLING_FREQUENCY_MS);
 
         private readonly Timer _backupTimer = new Timer(BACKUP_FREQUENCY_MS);
         private bool _isBackingUp;
@@ -56,7 +58,8 @@ namespace GameServerManager
             InitializeComponent();
             CheckServerStatus();
 
-            _backupTimer.Elapsed += Timer_Elapsed;
+            _backupTimer.Elapsed += BackupTimer_Elapsed;
+            _telnetTimer.Elapsed += TelnetTimer_Elapsed;
         }
 
         #region Bindings
@@ -114,14 +117,14 @@ namespace GameServerManager
                 return;
             }
 
-            //if (IsTelnetConnected)
-            //{
-            //    DisconnectFromTelnet();
-            //}
-            //else
-            //{
-            //    IsTelnetConnected = ConnectToTelnet().Result;
-            //}
+            if (IsTelnetConnected)
+            {
+                DisconnectFromTelnet();
+            }
+            else
+            {
+                IsTelnetConnected = ConnectToTelnet().Result;
+            }
         }
 
         private void ToggleBackupsButton_Click(object sender, RoutedEventArgs e)
@@ -138,6 +141,11 @@ namespace GameServerManager
             IsAutoBackingUp = !IsAutoBackingUp;
         }
 
+        private void ManualBackupButton_Click(object sender, RoutedEventArgs e)
+        {
+            CreateBackup();
+        }
+
         #endregion
 
         #region Methods
@@ -152,9 +160,16 @@ namespace GameServerManager
             serverProcess.WaitForExit();
         }
 
-        private void StopServer()
+        private async void StopServer()
         {
+            if (_telnetClient == null)
+            {
+                return;
+            }
 
+            await _telnetClient.WriteLine(TELNET_SAVE_AND_EXIT_SERVER).ConfigureAwait(false);
+            CheckServerStatus();
+            IsTelnetConnected = false;
         }
 
         private void CheckServerStatus()
@@ -164,16 +179,67 @@ namespace GameServerManager
             IsServerRunning = isRunning;
         }
 
-        //private async Task<bool> ConnectToTelnet()
-        //{
-        //    _telnetClient = new Client(TELNET_ADDRESS, TELNET_PORT, new System.Threading.CancellationToken());
-        //    return await _telnetClient.TryLoginAsync(TELNET_USERNAME, TELNET_PASSWORD, 10000);            
-        //}
+        private async Task<bool> ConnectToTelnet()
+        {
+            _telnetClient = new Client(TELNET_ADDRESS, TELNET_PORT, new System.Threading.CancellationToken());
 
-        //private async void DisconnectFromTelnet()
-        //{
+            if (!_telnetClient.IsConnected)
+            {
+                return await Task.FromResult(false);
+            }
 
-        //}
+            var readPrompt = await _telnetClient.TerminatedReadAsync("Enter password:", TimeSpan.FromMilliseconds(5000)).ConfigureAwait(false);
+            Debug.WriteLine(readPrompt);
+
+            await _telnetClient.WriteLine(TELNET_PASSWORD).ConfigureAwait(false);
+
+            var readValue = await _telnetClient.ReadAsync(TimeSpan.FromMilliseconds(5000)).ConfigureAwait(false);
+            Debug.WriteLine(readValue);
+
+            _telnetTimer.Start();
+
+            return await Task.FromResult(true);
+        }
+
+        private void DisconnectFromTelnet()
+        {
+            _telnetTimer.Stop();
+
+            if (_telnetClient == null)
+            {
+                return;
+            }
+
+            _telnetClient.Dispose();
+
+            IsTelnetConnected = false;
+        }
+
+        private async void TelnetTimer_Elapsed(object sender, ElapsedEventArgs e)
+        {
+            if (!IsServerRunning)
+            {
+                return;
+            }
+
+            if (!IsTelnetConnected)
+            {
+                return;
+            }
+
+            if (_telnetClient == null)
+            {
+                return;
+            }
+
+            var readValue = await _telnetClient.ReadAsync().ConfigureAwait(false);
+            if (string.IsNullOrWhiteSpace(readValue))
+            {
+                return;
+            }
+
+            Debug.WriteLine(readValue);
+        }
 
         private void BeginBackups()
         {
@@ -185,7 +251,12 @@ namespace GameServerManager
             _backupTimer.Stop();
         }
 
-        private async void Timer_Elapsed(object sender, ElapsedEventArgs e)
+        private void BackupTimer_Elapsed(object sender, ElapsedEventArgs e)
+        {
+            CreateBackup();
+        }
+
+        private async void CreateBackup()
         {
             if (_isBackingUp)
             {
@@ -194,6 +265,13 @@ namespace GameServerManager
 
             _isBackingUp = true;
 
+            await Task.Run(BackupSaveData);
+
+            _isBackingUp = false;
+        }
+
+        private void BackupSaveData()
+        {
             Debug.WriteLine("Backing Up Files...");
 
             Debug.WriteLine("Copying Files...");
@@ -204,7 +282,6 @@ namespace GameServerManager
             ZipFile.CreateFromDirectory(GAME_BACKUP_TEMP_DIRECTORY, zipFilePath);
 
             Debug.WriteLine($"Done, backup saved to {zipFilePath}");
-            _isBackingUp = false;
         }
 
         private static void CopyFilesRecursively(string sourceDirectory, string destinationDirectory)

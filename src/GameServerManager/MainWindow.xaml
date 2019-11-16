@@ -17,6 +17,7 @@
             <ColumnDefinition Width="Auto" />
             <ColumnDefinition Width="Auto" />
             <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="Auto" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
@@ -94,6 +95,24 @@
                                     Value="Stop Backups" />
                         </DataTrigger>
                     </Style.Triggers>
+                </Style>
+            </Button.Style>
+        </Button>
+
+        <Button x:Name="ManualBackupButton"
+                Grid.Column="3"
+                Grid.Row="0"
+                Click="ManualBackupButton_Click">
+            <Button.Style>
+                <Style TargetType="{x:Type Button}">
+                    <Setter Property="Content"
+                            Value="Manual Backup" />
+
+                    <Setter Property="Margin"
+                            Value="5" />
+
+                    <Setter Property="Width"
+                            Value="100" />
                 </Style>
             </Button.Style>
         </Button>
